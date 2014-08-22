@@ -1,4 +1,5 @@
 from pygui import *
 
-text('hello world')
-text('easy python gui!')
+text('press a or b')
+key('a', do(text, 'apple'))
+key('b', do(text, 'banana'))

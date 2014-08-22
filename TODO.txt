@@ -1,0 +1,8 @@
+on key
+	default key down - no autorepeat
+	
+state
+	multiple coexist
+	
+draw
+	reigion

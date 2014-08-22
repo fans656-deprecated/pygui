@@ -10,9 +10,20 @@ def export(func):
     __all__.append(func.func_name)
     return func
 
+class Do:
+    def __init__(self, *funcs):
+        self.funcs = funcs
+
+    def __add__(self, doable):
+        return Do(*(self.funcs + doable.funcs))
+
+    def __call__(self):
+        for func in self.funcs:
+            func()
+
 @export
 def do(func, *args, **kwas):
-    return lambda: func(*args, **kwas)
+    return Do(lambda: func(*args, **kwas))
 
 @export
 def key(keyname, callback):
@@ -20,9 +31,13 @@ def key(keyname, callback):
 
 @export
 def text(s):
-    text.s = s
+    text.data = s
     _widget.update()
-text.s = ''
+
+@export
+def circle(center, radius):
+    circle.data = (center, radius)
+    _widget.update()
 
 _app = QApplication(sys.argv)
 
@@ -56,7 +71,14 @@ class _Widget(QDialog):
         font = painter.font()
         font.setPixelSize(self.height() / 10.0)
         painter.setFont(font)
-        painter.drawText(self.rect(), Qt.AlignCenter, text.s)
+        if hasattr(text, 'data'):
+            painter.drawText(self.rect(), Qt.AlignCenter, text.data)
+        if hasattr(circle, 'data'):
+            center, radius = circle.data
+            x, y = center
+            d = 2 * radius
+            rc = QRectF(x - radius, y - radius, d, d)
+            painter.drawEllipse(rc)
 
     def keyPressEvent(self, event):
         global _keyDownHandlers

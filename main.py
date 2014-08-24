@@ -1,33 +1,75 @@
 from pygui import *
 
-# [update on 2014-08-23 16:53:55]
-# this is not universally appliable
-# the semantics of text() or circle() could
-# magically mean two different things:
-#   1. do it now
-#   2. as a callback
-# but if the user define his own function,
-# due to Python's eager evaluation strategy, f(1, 2) in
-#   key('a', f(1, 2))
-# will be called and what passed to key() is the returned value
-# you can only change this by extra explicit machanism (e.g. decorator)
-# but that would lose the meaning of text() being magical
-#
-# SO, the CONCLUSION is: we can't omit the do() notation
-#
+class Model:
 
-# try to implement this:
-# when called as standalone, text() append to draw
-# when used as Do, it deferred
+    def init(self):
+        self.records = Records()
+        self.spans = self.formatedSpans()
 
-a = text('apple') + circle((200, 100), 20) 
-b = text('banana') + circle((500, 200), 50)
+    def drawRecord(self):
+        record = self.records.todayRecord()
+        # setFont only has effect in THIS context
+        setFont('Inconsolata', height() / 3)
+        self.spans = record.formatedSpans()
+        colors = config.spanColors
+        for span, color in zip(self.spans, colors):
+            # when called multipy times in the same context
+            # it put multiple line
+            drawText(span, config.color)
 
-text('press a or b')
-text('to draw things') # this will draw two lines of text
+    def drawStatistics(self):
+        records = self.records
+        spans = [r.totalSeconds() for r in records]
+        maxSpan = config.expectedSpan.total_seconds()
+        # drawHistogram(list, max=None) take a list of numbers
+        # and draw a histogram
+        # if bound is not specified, it will use the max of the list
+        # Return a statistics object, see the usage below
+        stat = drawHistogram(spans, bound=maxSpan)
+        # stat.bound() return the bound used by drawHistogram()
+        # it can be used to draw a line, or extract the data
+        # like stat.bound().line().x() or float(stat.bound())
+        drawLine(stat.bound())
+        drawLine(stat.average())
 
-key('a', a) # draw when press a
-key('b', b) # draw when press b
+    def update(self):
+        self.records.update()
+        return self.spans == self.formatedSpans()
 
-circle((50, 50), 10)
-circle((50, 80), 10) # this will draw two circles
+    def toggle(self):
+        self.records.toggle()
+
+    def toggleStatistics(self):
+        Canvas('statistics').toggle()
+
+    def formatedSpans(self):
+        return self.records.todayRecord().formatedSpans()
+
+m = Model()
+
+# canvas(name, drawer) will return a canvas with that name
+a = canvas('record', m.drawRecord)
+# Canvas.hide() will hide the canvas
+b = canvas('statistics', m.drawStatistics).hide()
+# canvas composition is specified using `+` and `*`
+#   a + b stack a and b horizontally
+#   a * b stack a and b vertically
+#   canvas[weight] specify the relative width/height weight in the stack
+# e.g. the height(due to the `*`) ratio of a and b is 2:1
+a[2] * b
+
+# state(s1, s2, ..) will add a state group
+# StateGroup.switch will iterate over the states,
+# and by default it will change the application title
+#   for more elavorated usage, StateGroup can be assigned a name
+#   and its state too
+#   then the StateGroup can be refered like this:
+#   setTitle('MyApp @State in @EditMode')
+# do(func) + do(func) is merely for lambda composition
+onkey(' ', do(m.toggle) + do(state('Running', 'Stopped').switch))
+# canvas[name] return the Canvas with that name
+# Canvas.toggle will show/hide the canvas
+onkey('s', canvas['statistics'].toggle)
+onclose(m.toggle)
+# ontick(seconds, func) will call the func every `seconds` seconds
+ontick(0.1, m.update)

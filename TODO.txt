@@ -1,8 +1,2 @@
-on key
-	default key down - no autorepeat
-	
-state
-	multiple coexist
-	
-draw
-	reigion
+20140825 07:16:59
+在 README 中注明项目尚处于开发状态，并说明目标和特点

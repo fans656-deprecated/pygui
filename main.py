@@ -1,16 +1,16 @@
 from pygui import *
 
+import record
+
 class Model:
 
     def init(self):
-        self.records = Records()
+        self.records = record.Records()
         self.spans = self.formatedSpans()
 
     def drawRecord(self):
-        record = self.records.todayRecord()
         # setFont only has effect in THIS context
         setFont('Inconsolata', height() / 3)
-        self.spans = record.formatedSpans()
         colors = config.spanColors
         for span, color in zip(self.spans, colors):
             # when called multipy times in the same context
@@ -18,8 +18,7 @@ class Model:
             drawText(span, config.color)
 
     def drawStatistics(self):
-        records = self.records
-        spans = [r.totalSeconds() for r in records]
+        spans = [r.totalSeconds() for r in self.records]
         maxSpan = config.expectedSpan.total_seconds()
         # drawHistogram(list, max=None) take a list of numbers
         # and draw a histogram
@@ -34,16 +33,15 @@ class Model:
 
     def update(self):
         self.records.update()
-        return self.spans == self.formatedSpans()
+        spans = self.records.todayRecord().formatedSpans()
+        if self.spans != spans:
+            self.spans = spans
+            return True
+        else:
+            return False
 
     def toggle(self):
         self.records.toggle()
-
-    def toggleStatistics(self):
-        Canvas('statistics').toggle()
-
-    def formatedSpans(self):
-        return self.records.todayRecord().formatedSpans()
 
 m = Model()
 
